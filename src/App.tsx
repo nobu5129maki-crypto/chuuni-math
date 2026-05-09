@@ -54,6 +54,8 @@ export default function App() {
   const [showHint, setShowHint] = useState(false);
   const [locked, setLocked] = useState(false);
   const [wrongGentlerOpen, setWrongGentlerOpen] = useState(false);
+  /** ハードでライフ枯渇後に結果へ進んだとき true（撃沈終了） */
+  const [endedByHardKnockout, setEndedByHardKnockout] = useState(false);
   const [rewardModal, setRewardModal] = useState<RewardModal | null>(null);
 
   const comboRef = useRef(0);
@@ -82,6 +84,7 @@ export default function App() {
     setShowHint(false);
     setLocked(false);
     setWrongGentlerOpen(false);
+    setEndedByHardKnockout(false);
     setPhase("quiz");
   };
 
@@ -136,9 +139,18 @@ export default function App() {
   };
 
   const proceedFromWrong = () => {
+    if (difficulty === "hard" && lives <= 0) {
+      setEndedByHardKnockout(true);
+      endRound();
+      return;
+    }
     if (index + 1 >= deck.length) endRound();
     else goNext();
   };
+
+  /** 撃沈ひとつ前（最後の1ハート）。次のミスでゼロ＝強制終了予告に使う */
+  const hardOnLastHeart =
+    difficulty === "hard" && locked && picked !== null && picked !== current?.correctIndex && lives === 1;
 
   const finishResult = useCallback(() => {
     const xpGain = Math.min(120, Math.floor(score / 25 + correctCount * 4));
@@ -158,6 +170,7 @@ export default function App() {
       leveledUp: newLevel > oldLevel,
       newBadgeIds,
     });
+    setEndedByHardKnockout(false);
     setPhase("home");
   }, [correctCount, persist, profile, score, topic]);
 
@@ -165,7 +178,14 @@ export default function App() {
     const meta = topicMeta(topic);
     const qp = progressionSnapshot(profile.totalXp);
     const heartStr =
-      difficulty === "hard" ? `♥`.repeat(lives) + (lives < 3 ? `（のこり ${lives}）` : "") : "練習ライフ無制限";
+      difficulty === "hard"
+        ? (() => {
+            const bust = [...Array(3)].map((_, i) => (i < lives ? "♥" : "♡")).join("");
+            if (lives <= 0) return `${bust} · KO`;
+            if (lives < 3) return `${bust} · のこり ${lives}`;
+            return `${bust}`;
+          })()
+        : "練習ライフ無制限";
     return (
       <>
         <div className="quiz-top">
@@ -182,7 +202,7 @@ export default function App() {
             <div className="combo" title="連続正解するとボーナスがつきます">
               コンボ ×{combo}
             </div>
-            <div className="lives">{heartStr}</div>
+            <div className={`lives ${difficulty === "hard" ? "lives-hard-track" : ""}`}>{heartStr}</div>
           </div>
         </div>
         <div className="progress-track">
@@ -261,6 +281,10 @@ export default function App() {
               コンボが多いほど、つぎに正解したときのスコアにボーナスがつきます（だから「つなげるほどおいしい」）。途中でまちがえるとコンボは 0 にリセットされます。
             </p>
             <p>
+              <strong>ハード</strong>はミスするたびに ♥ が 1 つ減り、<strong>ゼロになったタイミングでそのラウンドは終了</strong>です（撃沈終了）。
+              説明は最後まで読んでから結果へ進めます。その時点までのスコアと経験値はきちんと反映されます。
+            </p>
+            <p>
               <strong>XP（えっくすぴー）</strong>は、ゲームでよく使う「経験値」イメージのポイントです。このアプリではラウンド結果から少しずつ増えます。
               画面右上の ⭐ は「いままでにためた XP の合計」です。ためると<strong>レベル</strong>が上がり、称号や解放コンテンツ（オールジャンルは Lv.{MIX_UNLOCK_LEVEL}〜）につながります。
             </p>
@@ -275,7 +299,7 @@ export default function App() {
                 ノーマル
               </button>
               <button type="button" className={difficulty === "hard" ? "active" : ""} onClick={() => setDifficulty("hard")}>
-                ハード（♥3）
+                ハード（♥3・ゼロで終了）
               </button>
             </div>
           </div>
@@ -342,6 +366,19 @@ export default function App() {
           {showWrongExplain && (
             <section className="wrong-feedback" aria-live="polite">
               <p className="wrong-feedback-title">だいじょうぶ、ここで一緒におさらいしよう</p>
+              {hardOnLastHeart && (
+                <p className="wrong-feedback-hard-warn" role="status">
+                  ♥ は<strong>あと 1 つ</strong>だけ。次のミスでゼロになり、説明を読んだうえで結果へジャンプします。焦らずおさらいしよう。
+                </p>
+              )}
+              {difficulty === "hard" && lives <= 0 && (
+                <div className="wrong-feedback-knockout-banner" role="status">
+                  <p className="wrong-feedback-knockout-title">ハートゼロ — 撃沈ラウンド</p>
+                  <p className="wrong-feedback-knockout-body">
+                    ハードモードでは、ここでフィニッシュです。でもこのあと進む問題はなく、結果画面で<strong>ここまでの記録（スコア・XP）</strong>を確認できます。ミスから学んだところは、つぎのチャレで武器になります。
+                  </p>
+                </div>
+              )}
               <p className="wrong-feedback-correct">
                 正解は「{current.choices[current.correctIndex]}」です。
               </p>
@@ -360,7 +397,7 @@ export default function App() {
                 </div>
               )}
               <button type="button" className="btn-primary btn-full" onClick={proceedFromWrong}>
-                次へ
+                {difficulty === "hard" && lives <= 0 ? "結果を見る（ハートゼロ）" : "次へ"}
               </button>
             </section>
           )}
@@ -392,16 +429,29 @@ export default function App() {
       )}
 
       {phase === "result" && (
-        <main className="card">
-          <div className="result-hero">
+        <main className={`card ${endedByHardKnockout ? "card--knockout" : ""}`}>
+          <div className={`result-hero ${endedByHardKnockout ? "result-hero--knockout" : ""}`}>
+            {endedByHardKnockout && (
+              <p className="result-knockout-ribbon">
+                撃沈終了（ハートゼロ）
+              </p>
+            )}
             <p className="result-score">{score}</p>
-            <p className="result-label">このラウンドのスコア</p>
+            <p className="result-label">
+              {endedByHardKnockout ? "ここまでのスコア（記録済み）" : "このラウンドのスコア"}
+            </p>
           </div>
+          {endedByHardKnockout && (
+            <p className="result-knockout-copy">
+              残り<strong>{Math.max(0, QUESTIONS_PER_ROUND - index - 1)}</strong>
+              問は未チャレンジ（ハード撃沈時はここまで）。復習しつつ、また ♥ を満タンから挑戦だ。
+            </p>
+          )}
           <div className="stat-grid">
             <div className="stat">
-              せいかい
+              {endedByHardKnockout ? "挑戦済み問題" : "せいかい"}
               <strong>
-                {correctCount} / {QUESTIONS_PER_ROUND}
+                {endedByHardKnockout ? `${correctCount} / ${index + 1}` : `${correctCount} / ${QUESTIONS_PER_ROUND}`}
               </strong>
             </div>
             <div className="stat">

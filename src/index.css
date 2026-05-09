@@ -490,8 +490,12 @@ button {
 .lives {
   font-size: 0.75rem;
   color: var(--danger);
+  font-weight: 600;
 }
 
+.lives-hard-track {
+  letter-spacing: 0.04em;
+}
 .progress-track {
   height: 6px;
   border-radius: 999px;
@@ -651,6 +655,46 @@ button {
   color: var(--warning);
 }
 
+.wrong-feedback-hard-warn {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.72rem;
+  border-radius: 0.75rem;
+  background: rgba(251, 113, 133, 0.12);
+  border: 1px solid rgba(251, 113, 133, 0.35);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: #fecdd3;
+}
+
+.wrong-feedback-knockout-banner {
+  margin: 0 0 0.85rem;
+  padding: 0.75rem 0.8rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(251, 113, 133, 0.45);
+  background: linear-gradient(135deg, rgba(76, 29, 149, 0.35), rgba(15, 23, 42, 0.85));
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+.wrong-feedback-knockout-title {
+  margin: 0 0 0.4rem;
+  font-family: "M PLUS Rounded 1c", sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  color: #fda4af;
+  letter-spacing: 0.04em;
+}
+
+.wrong-feedback-knockout-body {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.wrong-feedback-knockout-body strong {
+  color: var(--accent);
+}
+
 .wrong-feedback-correct {
   margin: 0 0 0.65rem;
   font-weight: 600;
@@ -709,6 +753,22 @@ button {
   padding: 0.5rem 0 0.25rem;
 }
 
+.result-hero--knockout {
+  padding-top: 0.25rem;
+}
+
+.result-knockout-ribbon {
+  display: inline-block;
+  margin: 0 0 0.5rem;
+  padding: 0.28rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #0f172a;
+  background: linear-gradient(90deg, #fb7185, #fbbf24);
+}
+
 .result-score {
   font-family: "M PLUS Rounded 1c", sans-serif;
   font-size: 2.5rem;
@@ -726,6 +786,25 @@ button {
   font-size: 0.85rem;
 }
 
+.result-knockout-copy {
+  margin: 0.85rem 0 0;
+  padding: 0.65rem 0.72rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  background: rgba(251, 191, 36, 0.06);
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.result-knockout-copy strong {
+  color: var(--warning);
+  font-weight: 800;
+}
+
+.card--knockout {
+  border-color: rgba(251, 113, 133, 0.22);
+}
 .stat-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
