@@ -22,9 +22,9 @@ export interface Question {
   choices: string[];
   correctIndex: number;
   hint?: string;
-  /** 不正解のあとに見せる、丁寧な解説（正解の考え方） */
+  /** 不正解直後に見せる、わかりやすい標準フローの解説 */
   explanationDetailed: string;
-  /** まだ難しいとき用の、さらにやさしい短い解説 */
+  /** 「もう少し、やさしく説明してほしい」表示用。ひと段落ずつ \n\n で区切ると読みやすい */
   explanationGentler: string;
   /** 正解直後の「当たり！」向けの短文 */
   explanationOnCorrectBrief: string;

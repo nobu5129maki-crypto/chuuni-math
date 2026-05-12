@@ -382,18 +382,28 @@ export default function App() {
               <p className="wrong-feedback-correct">
                 正解は「{current.choices[current.correctIndex]}」です。
               </p>
+              <p className="wrong-feedback-lead">
+                まちがえても大丈夫です。下は「なぜその答えになるか」を、つまずきやすい順にそろえたおさらいです。
+              </p>
               {current.wrongDiagramSvg ? (
                 <div className="diagram-slot diagram-slot-wrong" dangerouslySetInnerHTML={{ __html: current.wrongDiagramSvg }} />
               ) : null}
               <div className="wrong-feedback-body">{current.explanationDetailed}</div>
               {!wrongGentlerOpen ? (
                 <button type="button" className="btn-soft" onClick={() => setWrongGentlerOpen(true)}>
-                  もうすこし、やさしく説明してほしい
+                  もう少し、やさしく説明してほしい
                 </button>
               ) : (
                 <div className="wrong-feedback-gentler">
-                  <p className="wrong-feedback-gentler-label">やさしくいうと…</p>
-                  <p>{current.explanationGentler}</p>
+                  <p className="wrong-feedback-gentler-label">さらに、やさしく一歩ずつ</p>
+                  <p className="wrong-feedback-gentler-intro">
+                    用語が多く感じたら、こちらを先に読んでも大丈夫です。やることだけに分けてあります。
+                  </p>
+                  {current.explanationGentler.split(/\n\n+/).map((para, i) => (
+                    <p key={i} className="wrong-feedback-gentler-p">
+                      {para.trim()}
+                    </p>
+                  ))}
                 </div>
               )}
               <button type="button" className="btn-primary btn-full" onClick={proceedFromWrong}>

@@ -709,6 +709,13 @@ button {
   color: var(--text);
 }
 
+.wrong-feedback-lead {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  line-height: 1.58;
+  color: var(--muted);
+}
+
 .wrong-feedback-gentler {
   margin: 0.85rem 0;
   padding: 0.7rem 0.75rem;
@@ -724,6 +731,21 @@ button {
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--accent);
+}
+
+.wrong-feedback-gentler-intro {
+  margin: 0 0 0.55rem;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.wrong-feedback-gentler-p {
+  margin: 0 0 0.55rem;
+}
+
+.wrong-feedback-gentler-p:last-child {
+  margin-bottom: 0;
 }
 
 .btn-soft {
