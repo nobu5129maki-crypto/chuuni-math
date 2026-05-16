@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import type { DifficultyId, TopicId } from "./types";
-import { TOPICS, topicMeta } from "./topics";
+import type { CurriculumUnit, SemesterId } from "./curriculum";
+import { SEMESTER_PLANS, semesterPlan } from "./curriculum";
+import type { DifficultyId, Question, TopicId } from "./types";
+import { topicMeta } from "./topics";
 import { buildQuestionDeck } from "./questions";
-import type { Question } from "./types";
 import {
   addXp,
   incrementRound,
@@ -38,9 +39,15 @@ function randomSeed(): number {
   return Math.floor(Math.random() * 1_000_000_000);
 }
 
+/** 単元カードから実際に起動するステージ（専用セットがない単元は関連ステージ） */
+function resolveLaunchTopic(unit: CurriculumUnit): TopicId | null {
+  return unit.playTopic ?? unit.relatedTopic ?? null;
+}
+
 export default function App() {
   const [profile, setProfile] = useState(loadProfile);
   const [phase, setPhase] = useState<Phase>("home");
+  const [selectedSemester, setSelectedSemester] = useState<SemesterId>(1);
   const [topic, setTopic] = useState<TopicId>("linear");
   const [difficulty, setDifficulty] = useState<DifficultyId>("normal");
   const [deck, setDeck] = useState<Question[]>([]);
@@ -66,6 +73,7 @@ export default function App() {
   }, []);
 
   const prog = useMemo(() => progressionSnapshot(profile.totalXp), [profile.totalXp]);
+  const semester = useMemo(() => semesterPlan(selectedSemester), [selectedSemester]);
 
   const startGame = (t: TopicId, d: DifficultyId) => {
     const meta = topicMeta(t);
@@ -217,7 +225,7 @@ export default function App() {
       <header className="app-header">
         <div className="brand">
           <h1 className="brand-title">数チャレ！中2マスター</h1>
-          <p className="brand-sub">一次関数・図形・確率・式 — クエストで身につける</p>
+          <p className="brand-sub">中学2年｜1〜3学期マップ — ジャンル別にクエストで身につける</p>
         </div>
         <div className="header-stats" title={prog.rank.tagline}>
           <div className="xp-pill" title="プレイを重ねるほど少しずつふえる経験値（合計）">
@@ -234,10 +242,11 @@ export default function App() {
 
       {phase === "home" && (
         <main className="card">
-          <h2>ステージをえらぶ</h2>
+          <h2 className="home-title">学期とジャンルからえらぶ</h2>
           <p className="lead">
-            単元ごとの4ステージに加え、レベル {MIX_UNLOCK_LEVEL} で「オールジャンル・ラッシュ」が解放されます。
-            XP をためてランクアップし、実績バッジを集めながら定期テストや志望校対策を進めましょう。
+            公立中学校・中学2年の典型的な進度で、<strong>1学期／2学期／3学期</strong>と
+            <strong>数と式・関数・図形・データの活用</strong>に整理しました。単元カードをタップするとチャレンジがはじまります。
+            「オールジャンル・ラッシュ」はレベル {MIX_UNLOCK_LEVEL} から・3学期の総合からもどうぞ。
           </p>
           <section className="progression-card" aria-label="レベルと次のごほうびまで">
             <div className="prog-row">
@@ -292,8 +301,8 @@ export default function App() {
               <strong>実績バッジ</strong>は、プレイ回数や累計 XP・レベル・いろいろなステージの記録など、条件を満たすと光ります。
             </p>
           </details>
-          <div className="row" style={{ marginBottom: "0.75rem" }}>
-            <span className="quiz-meta">難易度</span>
+          <div className="row" style={{ marginBottom: "0.85rem" }}>
+            <span className="quiz-meta">難易度（すべての単元共通）</span>
             <div className="pill-toggle">
               <button type="button" className={difficulty === "normal" ? "active" : ""} onClick={() => setDifficulty("normal")}>
                 ノーマル
@@ -303,34 +312,106 @@ export default function App() {
               </button>
             </div>
           </div>
-          <div className="topic-grid">
-            {TOPICS.map((t) => {
-              const needLv = t.unlockLevel ?? 1;
-              const isLocked = prog.level < needLv;
+
+          <div className="semester-tablist" role="tablist" aria-label="学期の切り替え">
+            {SEMESTER_PLANS.map((s) => {
+              const active = selectedSemester === s.id;
               return (
                 <button
-                  key={t.id}
+                  key={s.id}
                   type="button"
-                  className={isLocked ? "topic-btn topic-btn--locked" : "topic-btn"}
-                  style={{ "--topic-color": t.accent } as CSSProperties}
-                  disabled={isLocked}
-                  aria-disabled={isLocked}
-                  onClick={() => startGame(t.id, difficulty)}
+                  role="tab"
+                  aria-selected={active}
+                  className={`semester-tab ${active ? "semester-tab--active" : ""}`}
+                  onClick={() => setSelectedSemester(s.id)}
                 >
-                  {isLocked && (
-                    <span className="topic-lock-banner" aria-hidden>
-                      🔒 Lv.{needLv}
-                    </span>
-                  )}
-                  <span className="topic-emoji">{t.emoji}</span>
-                  <span className="topic-name">{t.title}</span>
-                  <span className="topic-desc">{isLocked ? `レベル ${needLv} で解放 · ${t.subtitle}` : t.subtitle}</span>
-                  {!isLocked && profile.bestScores[t.id] != null && (
-                    <span className="topic-best">ベスト {profile.bestScores[t.id]} pt</span>
-                  )}
+                  <span className="semester-tab-title">{s.title}</span>
+                  <span className="semester-tab-sub">{s.periodHint}</span>
                 </button>
               );
             })}
+          </div>
+
+          <section className="semester-banner" aria-live="polite">
+            <div className="semester-banner-top">
+              <span className="semester-ribbon">{semester.ribbon}</span>
+              <span className="semester-banner-label">中学2年・この学期のゴールイメージ</span>
+            </div>
+            <p className="semester-lead">{semester.lead}</p>
+          </section>
+
+          <div className="semester-genres">
+            {semester.genres.map((genre) => (
+              <section key={genre.id} className="genre-section" aria-labelledby={`genre-${genre.id}`}>
+                <h3 className="genre-heading" id={`genre-${genre.id}`} style={{ "--genre-accent": genre.accent } as CSSProperties}>
+                  <span className="genre-heading-emoji" aria-hidden>
+                    {genre.emoji}
+                  </span>
+                  <span className="genre-heading-label">{genre.label}</span>
+                </h3>
+                <div className="unit-grid">
+                  {genre.units.map((unit) => {
+                    const launchTopic = resolveLaunchTopic(unit);
+                    if (!launchTopic) return null;
+                    const stageMeta = topicMeta(launchTopic);
+                    const needLv = stageMeta.unlockLevel ?? 1;
+                    const locked = prog.level < needLv;
+                    const dedicated = unit.playTopic != null;
+                    const best = profile.bestScores[launchTopic];
+
+                    return (
+                      <article
+                        key={unit.id}
+                        className={`unit-card ${locked ? "unit-card--locked" : ""} ${dedicated ? "" : "unit-card--placeholder"}`}
+                        style={{ "--unit-accent": unit.accent } as CSSProperties}
+                      >
+                        {locked && (
+                          <span className="unit-lock-badge" aria-hidden>
+                            🔒 Lv.{needLv}
+                          </span>
+                        )}
+                        {!dedicated && (
+                          <span className="unit-placeholder-badge" title={unit.relatedHint}>
+                            専用セット準備中
+                          </span>
+                        )}
+                        <div className="unit-card-head">
+                          <span className="unit-card-emoji" aria-hidden>
+                            {unit.emoji}
+                          </span>
+                          <div className="unit-card-titles">
+                            <h4 className="unit-card-title">{unit.title}</h4>
+                            <p className="unit-card-stage">
+                              ステージ：{stageMeta.emoji} {stageMeta.title}
+                              {!dedicated && unit.relatedHint ? (
+                                <span className="unit-card-stage-note">（{unit.relatedHint}）</span>
+                              ) : null}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="unit-card-summary">{unit.summary}</p>
+                        <div className="unit-card-actions">
+                          <button
+                            type="button"
+                            className="unit-card-btn"
+                            disabled={locked}
+                            aria-disabled={locked}
+                            onClick={() => startGame(launchTopic, difficulty)}
+                          >
+                            {dedicated ? "この単元でチャレンジ" : "関連ステージで練習"}
+                          </button>
+                          {!locked && best != null && (
+                            <span className="unit-card-best" title="このステージのベストスコア">
+                              ベスト {best} pt
+                            </span>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
         </main>
       )}
@@ -480,7 +561,9 @@ export default function App() {
         </main>
       )}
 
-      <p className="footer-note">問題は自動生成されます。単元は中学2年数学の代表的な領域をカバーしています。</p>
+      <p className="footer-note">
+        問題は自動生成です。学期マップは教科書・自治体で前後しますが、中学2年の主な単元をジャンル別に一通り載せています（連立方程式・証明専用など一部は関連ステージから土台練習）。
+      </p>
 
       {rewardModal && (
         <div className="reward-overlay" role="dialog" aria-modal="true" aria-labelledby="reward-title">
