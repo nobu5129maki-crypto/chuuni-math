@@ -10,6 +10,7 @@ function deployBase(mode: string): string {
   if (mode !== "production") return "/";
   const raw = process.env.VITE_DEPLOY_BASE?.trim();
   if (!raw || raw === "/") return "/";
+  if (raw === "." || raw === "./") return "./";
   const withLead = raw.startsWith("/") ? raw : `/${raw}`;
   return withLead.endsWith("/") ? withLead : `${withLead}/`;
 }
@@ -22,9 +23,12 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: "autoUpdate",
+        manifestFilename: base === "./" ? "manifest.json" : "manifest.webmanifest",
         includeAssets: [
           "pwa-192x192.png",
           "pwa-512x512.png",
+          "pwa-maskable-192.png",
+          "pwa-maskable-512.png",
           "apple-touch-icon.png",
         ],
         manifest: {
@@ -43,14 +47,22 @@ export default defineConfig(({ mode }) => {
               src: "pwa-192x192.png",
               sizes: "192x192",
               type: "image/png",
+              purpose: "any",
             },
             {
               src: "pwa-512x512.png",
               sizes: "512x512",
               type: "image/png",
+              purpose: "any",
             },
             {
-              src: "pwa-512x512.png",
+              src: "pwa-maskable-192.png",
+              sizes: "192x192",
+              type: "image/png",
+              purpose: "maskable",
+            },
+            {
+              src: "pwa-maskable-512.png",
               sizes: "512x512",
               type: "image/png",
               purpose: "maskable",
